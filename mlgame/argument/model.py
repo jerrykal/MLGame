@@ -1,10 +1,11 @@
 import datetime
 import os
-from typing import Union, List, Optional
+from pathlib import Path
+from typing import List, Optional, Union
 
 import pydantic
-from pydantic import FilePath, validator, DirectoryPath
-from pathlib import Path
+from pydantic import DirectoryPath, FilePath, validator
+
 from mlgame.utils.io import check_folder_existed_and_readable_or_create
 
 
@@ -12,6 +13,7 @@ class MLGameArgument(pydantic.BaseModel):
     """
     Data Entity to handle parsed cli arguments
     """
+
     fps: int = 30
     progress_frame_frequency: int = 300
     one_shot_mode: bool = False
@@ -23,32 +25,27 @@ class MLGameArgument(pydantic.BaseModel):
     game_params: List[str]
     output_folder: Union[Path, None] = None
     progress_folder: Union[Path, None] = None
+    wait_action: Union[bool, None] = None
 
-    @validator('is_manual', always=True)
+    @validator("is_manual", always=True)
     def update_manual(cls, v, values) -> bool:
-        if 'ai_clients' in values:
-            return values['ai_clients'] is None
+        if "ai_clients" in values:
+            return values["ai_clients"] is None
         return True
 
-    @validator('output_folder')
+    @validator("output_folder")
     def update_output_folder(cls, v, values):
         if v is None:
             return None
-        path = os.path.join(
-            str(v),
-            datetime.datetime.now().strftime('%Y%m%d-%H%M%S')
-        )
+        path = os.path.join(str(v), datetime.datetime.now().strftime("%Y%m%d-%H%M%S"))
         if check_folder_existed_and_readable_or_create(path):
             return path
 
-    @validator('progress_folder')
+    @validator("progress_folder")
     def update_progress_folder(cls, v, values):
         if v is None:
             return None
-        path = os.path.join(
-            str(v),
-            datetime.datetime.now().strftime('%Y%m%d-%H%M%S')
-        )
+        path = os.path.join(str(v), datetime.datetime.now().strftime("%Y%m%d-%H%M%S"))
         if check_folder_existed_and_readable_or_create(path):
             return path
 
@@ -57,10 +54,11 @@ class UserNumConfig(pydantic.BaseModel):
     """
     Data Entity to handle user_num in game_config.json
     """
+
     min: int
     max: int
 
-    @validator('max')
+    @validator("max")
     def max_should_be_larger_than_min(cls, v, values):
-        assert v >= values['min']
+        assert v >= values["min"]
         return v
