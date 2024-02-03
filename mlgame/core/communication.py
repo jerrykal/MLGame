@@ -1,5 +1,5 @@
-from threading import Thread
 from queue import Queue
+from threading import Thread
 
 from mlgame.core.env import WS_WAIT_GAME_TIMEOUT
 
@@ -177,9 +177,10 @@ class GameCommManager:
     The commnuication manager for the game process
     """
 
-    def __init__(self):
+    def __init__(self, wait_action=False):
         self._comm_to_ml_set = CommunicationSet()
         self._comm_to_others = CommunicationSet()
+        self.wait_action = wait_action
 
     def add_comm_to_ml(self, ml_name, recv_end, send_end):
         """
@@ -212,7 +213,7 @@ class GameCommManager:
 
         If the received object is `MLProcessError`, raise the exception.
         """
-        obj = self._comm_to_ml_set.recv(ml_name, to_wait=False)
+        obj = self._comm_to_ml_set.recv(ml_name, to_wait=self.wait_action)
         return obj
 
     def recv_from_all_ml(self):
@@ -244,7 +245,9 @@ class GameCommManager:
         """
         obj_dict = {}
         for client_name in self._comm_to_others.get_recv_end_names():
-            obj_dict[client_name] = self._comm_to_others.recv(client_name, to_wait=False)
+            obj_dict[client_name] = self._comm_to_others.recv(
+                client_name, to_wait=self.wait_action
+            )
         return obj_dict
 
 
@@ -285,9 +288,10 @@ class MLCommManager:
         while True:
             if self._obj_queue.full():
                 self._obj_queue.get()
-                print("Warning: The object queue for the process '{}' is full. "
-                      "Drop the oldest object."
-                      .format(self._ml_name))
+                print(
+                    "Warning: The object queue for the process '{}' is full. "
+                    "Drop the oldest object.".format(self._ml_name)
+                )
 
             obj = self._comm_to_game.recv()
             self._obj_queue.put(obj)
@@ -314,8 +318,11 @@ class MLCommManager:
         try:
             self._comm_to_game.send(obj)
         except BrokenPipeError:
-            print("Process '{}': The connection to the game process is closed."
-                  .format(self._ml_name))
+            print(
+                "Process '{}': The connection to the game process is closed.".format(
+                    self._ml_name
+                )
+            )
 
 
 class TransitionCommManager:
